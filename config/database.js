@@ -1,6 +1,9 @@
 const mongoose = require('mongoose');
 
-const connectDB = async () => {
+const connectDB = async (retryCount = 0) => {
+  const maxRetries = 5;
+  const retryDelay = 5000; // 5 seconds
+  
   try {
     const conn = await mongoose.connect(process.env.MONGODB_URI, {
       useNewUrlParser: true,
@@ -26,8 +29,16 @@ const connectDB = async () => {
     });
 
   } catch (error) {
-    console.error('Error connecting to MongoDB:', error.message);
-    process.exit(1);
+    console.error(`Error connecting to MongoDB: ${error.message}`);
+    if (retryCount < maxRetries) {
+      console.log(`Retrying to connect to MongoDB in ${retryDelay / 1000} seconds... (${retryCount + 1}/${maxRetries})`);
+      await new Promise(res => setTimeout(res, retryDelay));
+      return connectDB(retryCount + 1);
+    } else {
+      console.error('Max retries reached. Could not connect to MongoDB.');
+      // Instead of exiting immediately, throw error to allow upper layers to handle crash or recovery
+      throw error;
+    }
   }
 };
 

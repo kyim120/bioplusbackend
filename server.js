@@ -3,6 +3,10 @@ const express = require('express');
 const cors = require('cors');
 const connectDB = require('./config/database');
 const { validateEnv } = require('./config/validateEnv');
+
+// Validate environment variables before anything else
+validateEnv();
+
 const { errorHandler, notFound } = require('./middleware/errorHandler');
 const { apiLimiter } = require('./middleware/rateLimit');
 
@@ -77,6 +81,17 @@ app.use(notFound);
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
+
+// Global error handling to prevent crash loops and log properly
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+  // consider exiting or alerting here if needed without crash loop
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  // consider exiting or alerting here if needed without crash loop
+});
 
 if (require.main === module) {
   app.listen(PORT, () => {
