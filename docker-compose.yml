@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:7.0
+    container_name: bioplus-mongo
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: secret123
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - bioplus-network
+
+  backend:
+    build: .
+    container_name: bioplus-backend
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      NODE_ENV: production
+      MONGODB_URI: mongodb://admin:secret123@mongodb:27017/bioplus?authSource=admin
+      JWT_SECRET: change-this-secret-key-in-production
+      JWT_EXPIRE: 7d
+      CORS_ORIGIN: http://localhost:5173
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+    depends_on:
+      - mongodb
+    volumes:
+      - ./uploads:/app/uploads
+    networks:
+      - bioplus-network
+
+volumes:
+  mongo-data:
+
+networks:
+  bioplus-network:
+    driver: bridge
